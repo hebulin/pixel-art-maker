@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>像素艺术创作器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>像素艺术创作器</h1>
+            <div class="tools">
+                <input type="color" id="colorPicker" value="#000000">
+                <button id="eraser">橡皮擦</button>
+                <button id="clear">清空画布</button>
+                <select id="gridSize">
+                    <option value="16">16 × 16</option>
+                    <option value="32" selected>32 × 32</option>
+                    <option value="64">64 × 64</option>
+                    <option value="128">128 × 128</option>
+                </select>
+                <div class="zoom-tools">
+                    <button id="zoomOut">缩小</button>
+                    <span id="zoomLevel">100%</span>
+                    <button id="zoomIn">放大</button>
+                </div>
+                <button id="save">保存</button>
+                <button id="load">加载最近的作品</button>
+                <button id="exportImage">导出图片</button>
+                <button id="exportJSON">导出设计</button>
+                <input type="file" id="importFile" accept=".json,image/*" style="display:none">
+                <button id="importButton">导入设计</button>
+            </div>
+        </header>
+        
+        <main>
+            <div class="canvas-container">
+                <div class="grid-container" id="pixelCanvas"></div>
+            </div>
+            <div class="gallery">
+                <h2>作品集</h2>
+                <div id="savedArtworks" class="saved-artworks"></div>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
