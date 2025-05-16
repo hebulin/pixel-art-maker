@@ -17,19 +17,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomLevelEl = document.getElementById('zoomLevel');
     const canvasContainer = document.querySelector('.canvas-container');
 
-    // 防止拖拽和事件冒泡
-    document.addEventListener('dragstart', (e) => {
-        e.preventDefault();
-    });
-
-    document.addEventListener('drop', (e) => {
-        e.preventDefault();
-    });
-
-    // 防止画布上的默认行为
-    pixelCanvas.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-    });
+    // New Modal DOM Elements for Pixelate Feature
+    const pixelateModal = document.getElementById('pixelateModal');
+    const mainPixelateButton = document.getElementById('pixelateButton'); // The button that opens the modal
+    const closePixelateModalBtn = document.getElementById('closePixelateModalBtn');
+    const uploadImageInModalBtn = document.getElementById('uploadImageInModalBtn');
+    const pixelateFileModalInput = document.getElementById('pixelateFileModal');
+    const previewContainerModal = document.getElementById('previewContainerModal');
+    const previewOriginalModalImg = document.getElementById('previewOriginalModal');
+    const previewPixelatedModalCanvas = document.getElementById('previewPixelatedModal');
+    const pixelateOptionsModalDiv = document.getElementById('pixelateOptionsModal');
+    const pixelateSizeModalSelect = document.getElementById('pixelateSizeModal');
+    const pixelateConfirmModalBtn = document.getElementById('pixelateConfirmModal');
+    const pixelateCancelModalBtn = document.getElementById('pixelateCancelModal');
 
     // Variables
     let currentColor = colorPicker.value;
@@ -135,6 +135,158 @@ document.addEventListener('DOMContentLoaded', () => {
             updateZoom();
         }
     });
+
+    // --- MODAL PIXELATE FEATURE --- 
+
+    function openPixelateModal() {
+        // Reset modal state
+        previewOriginalModalImg.src = '';
+        const previewCtx = previewPixelatedModalCanvas.getContext('2d', { willReadFrequently: true });
+        previewCtx.clearRect(0, 0, previewPixelatedModalCanvas.width, previewPixelatedModalCanvas.height);
+        pixelateFileModalInput.value = ''; // Clear file input
+        previewContainerModal.style.display = 'none';
+        pixelateOptionsModalDiv.style.display = 'none';
+        pixelateConfirmModalBtn.disabled = true;
+        pixelateSizeModalSelect.value = '32'; // Reset to default
+
+        pixelateModal.style.display = 'block';
+    }
+
+    function closePixelateModal() {
+        pixelateModal.style.display = 'none';
+        // Optional: further cleanup if needed when modal is simply closed without confirm
+        previewOriginalModalImg.src = '';
+        const previewCtx = previewPixelatedModalCanvas.getContext('2d', { willReadFrequently: true });
+        previewCtx.clearRect(0, 0, previewPixelatedModalCanvas.width, previewPixelatedModalCanvas.height);
+        pixelateFileModalInput.value = '';
+    }
+
+    // Event listener for the main button that opens the modal
+    mainPixelateButton.addEventListener('click', openPixelateModal);
+
+    // Event listener for the close button (X) on the modal
+    closePixelateModalBtn.addEventListener('click', closePixelateModal);
+
+    // Event listener for the "Cancel" button inside the modal
+    pixelateCancelModalBtn.addEventListener('click', closePixelateModal);
+
+    // Event listener for the "Upload Image" button inside the modal
+    uploadImageInModalBtn.addEventListener('click', () => {
+        pixelateFileModalInput.click();
+    });
+
+    // Event listener for file selection in the modal
+    pixelateFileModalInput.addEventListener('change', handlePixelateFileSelectModal);
+
+    // Event listener for pixel size change in the modal
+    pixelateSizeModalSelect.addEventListener('change', generatePixelatedPreviewModal);
+
+    // Event listener for the "Confirm Conversion" button in the modal
+    pixelateConfirmModalBtn.addEventListener('click', () => {
+        if (!previewOriginalModalImg.complete || !previewOriginalModalImg.src || previewOriginalModalImg.naturalWidth === 0) {
+            alert('请先选择一张图片并生成预览。');
+            return;
+        }
+
+        const targetGridSize = parseInt(pixelateSizeModalSelect.value);
+
+        if (confirm(`确定要将图片转换为 ${targetGridSize}×${targetGridSize} 像素画并应用到当前画布吗？此操作会覆盖现有内容。`)) {
+            if (currentGridSize !== targetGridSize) {
+                gridSizeSelect.value = targetGridSize;
+                currentGridSize = targetGridSize;
+                createGrid(currentGridSize);
+            }
+
+            const previewCtx = previewPixelatedModalCanvas.getContext('2d', { willReadFrequently: true });
+            const mainCanvasPixels = document.querySelectorAll('#pixelCanvas .pixel');
+
+            if (mainCanvasPixels.length !== targetGridSize * targetGridSize) {
+                console.error("Mismatch between main canvas pixels and target grid size after recreating grid.");
+                alert("转换时发生错误，画布大小不匹配。");
+                return; // Keep modal open if error
+            }
+
+            for (let y = 0; y < targetGridSize; y++) {
+                for (let x = 0; x < targetGridSize; x++) {
+                    const imageData = previewCtx.getImageData(x, y, 1, 1).data;
+                    const r = imageData[0];
+                    const g = imageData[1];
+                    const b = imageData[2];
+                    const a = imageData[3];
+                    const color = (a < 128) ? 'white' : `rgb(${r},${g},${b})`;
+                    const pixelIndex = y * targetGridSize + x;
+                    if (mainCanvasPixels[pixelIndex]) {
+                        mainCanvasPixels[pixelIndex].style.backgroundColor = color;
+                    }
+                }
+            }
+            closePixelateModal(); 
+        }
+    });
+
+    // --- Helper functions for Modal Pixelate --- 
+    function handlePixelateFileSelectModal(event) {
+        const file = event.target.files[0];
+        if (!file || !file.type.startsWith('image/')) {
+            alert('请选择一个图像文件。');
+            pixelateFileModalInput.value = ''; // Clear input
+            pixelateConfirmModalBtn.disabled = true;
+            previewContainerModal.style.display = 'none';
+            pixelateOptionsModalDiv.style.display = 'none';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewOriginalModalImg.src = e.target.result;
+            previewOriginalModalImg.onload = () => {
+                if (previewOriginalModalImg.naturalWidth === 0) {
+                    alert('无法加载图片，请尝试其他文件。');
+                    previewOriginalModalImg.src = '';
+                    pixelateFileModalInput.value = '';
+                    pixelateConfirmModalBtn.disabled = true;
+                    previewContainerModal.style.display = 'none';
+                    pixelateOptionsModalDiv.style.display = 'none';
+                    return;
+                }
+                previewContainerModal.style.display = 'block';
+                pixelateOptionsModalDiv.style.display = 'flex'; // Show options
+                pixelateConfirmModalBtn.disabled = false; // Enable confirm button
+                generatePixelatedPreviewModal();
+            };
+            previewOriginalModalImg.onerror = () => {
+                // alert('加载图片预览时出错。');
+                previewOriginalModalImg.src = '';
+                pixelateFileModalInput.value = '';
+                pixelateConfirmModalBtn.disabled = true;
+                previewContainerModal.style.display = 'none';
+                pixelateOptionsModalDiv.style.display = 'none';
+            };
+        };
+        reader.readAsDataURL(file);
+        // Don't clear pixelateFileModalInput.value here, allow browser to handle it.
+        // If cleared too early, might cause issues with some browsers or repeated uploads of same file.
+    }
+
+    function generatePixelatedPreviewModal() {
+        if (!previewOriginalModalImg.complete || !previewOriginalModalImg.src || previewOriginalModalImg.naturalWidth === 0) {
+            const ctx = previewPixelatedModalCanvas.getContext('2d', { willReadFrequently: true });
+            ctx.clearRect(0, 0, previewPixelatedModalCanvas.width, previewPixelatedModalCanvas.height);
+            pixelateConfirmModalBtn.disabled = true;
+            return;
+        }
+
+        const targetGridSize = parseInt(pixelateSizeModalSelect.value);
+        const image = previewOriginalModalImg;
+        const canvas = previewPixelatedModalCanvas;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        canvas.width = targetGridSize;
+        canvas.height = targetGridSize;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(image, 0, 0, targetGridSize, targetGridSize);
+        pixelateConfirmModalBtn.disabled = false; // Ensure confirm is enabled if preview generates
+    }
 
     // Functions
     function createGrid(size) {
@@ -294,7 +446,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 刷新画廊
         displaySavedArtworks();
-        alert('作品已保存！');
     }
 
     function displaySavedArtworks() {

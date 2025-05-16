@@ -31,6 +31,7 @@
                 <button id="exportJSON">导出设计</button>
                 <input type="file" id="importFile" accept=".json,image/*" style="display:none">
                 <button id="importButton">导入设计</button>
+                <button id="pixelateButton">图片转像素风格</button>
             </div>
         </header>
         
@@ -44,6 +45,43 @@
             </div>
         </main>
     </div>
+
+    <!-- Modal for Image to Pixel Art -->
+    <div id="pixelateModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="modal-close-btn" id="closePixelateModalBtn">&times;</span>
+            <h2>图片转像素风格</h2>
+            
+            <div class="modal-section">
+                <input type="file" id="pixelateFileModal" accept="image/*" style="display:none;">
+                <button id="uploadImageInModalBtn" class="modal-button">上传图片</button> 
+            </div>
+            
+            <div id="previewContainerModal" class="preview-container-modal" style="display: none;">
+                <h3>预览效果</h3>
+                <div class="preview-content-modal">
+                    <img id="previewOriginalModal" alt="原图">
+                    <canvas id="previewPixelatedModal"></canvas>
+                </div>
+            </div>
+
+            <div id="pixelateOptionsModal" class="pixelate-options-modal" style="display: none;">
+                <label for="pixelateSizeModal">转换尺寸:</label>
+                <select id="pixelateSizeModal">
+                    <option value="16">16 × 16</option>
+                    <option value="32" selected>32 × 32</option>
+                    <option value="64">64 × 64</option>
+                    <option value="128">128 × 128</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button id="pixelateConfirmModal" class="modal-button" disabled>确认转换</button>
+                <button id="pixelateCancelModal" class="modal-button">取消</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html> 
